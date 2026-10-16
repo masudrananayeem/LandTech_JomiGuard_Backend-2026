@@ -1,0 +1,6 @@
+import test from 'node:test'; import assert from 'node:assert/strict'; import {analyzeRecords} from '../src/riskEngine.js';
+const consistent={dagNo:'125',khatianNo:'789',deed:{owner:'Abdul Karim',areaDecimal:5,deedNo:'D-1',date:'2024-03-12'},khatian:{owner:'Abdul Karim',areaDecimal:5,dagNo:'125',khatianNo:'789'},mutation:{owner:'Abdul Karim',status:'completed',date:'2024-05-01'}};
+test('consistent sample has no findings',()=>{const r=analyzeRecords(consistent);assert.equal(r.score,0);assert.equal(r.findings.length,0)});
+test('detects owner, dag and area conflicts',()=>{const r=analyzeRecords({...consistent,khatian:{...consistent.khatian,owner:'Other',dagNo:'126',areaDecimal:4}});assert.ok(r.findings.some(f=>f.code==='OWNER_MISMATCH'));assert.ok(r.findings.some(f=>f.code==='DAG_MISMATCH'));assert.ok(r.findings.some(f=>f.code==='AREA_MISMATCH'));assert.ok(r.score>=65)});
+test('rejects impossible calendar date',()=>{const r=analyzeRecords({...consistent,deed:{...consistent.deed,date:'2023-11-31'}});assert.ok(r.findings.some(f=>f.code==='INVALID_DATE'))});
+test('unverified mutation is flagged',()=>{const r=analyzeRecords({...consistent,mutation:{...consistent.mutation,status:'pending'}});assert.ok(r.findings.some(f=>f.code==='MUTATION_UNVERIFIED'))});

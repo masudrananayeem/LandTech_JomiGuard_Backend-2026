@@ -40,3 +40,7 @@ The current project has a participant-controlled Express backend and Firebase co
 4. Report OCR CER/WER and per-field extraction exact-match/precision/recall/F1 with sample counts; no invented numbers.
 5. Demonstrate five or fewer reliable core features using synthetic/anonymized records.
 6. Make all findings explainable and label them as screening alerts, not legal conclusions.
+
+## Transaction-level implementation update
+
+Added a separate transaction screening engine and API routes for six synthetic scenarios plus custom evidence. The rule set covers deed ID reuse, seller/buyer/parcel registry references, seller ownership, transfer-area sufficiency, same-portion prior sale and mutation owner mismatch. Results explain each PASS/WARNING/FAIL and propose a next step. Automated tests check expected bands for the six synthetic scenarios. These tests are not a model benchmark and do not establish legal validity.

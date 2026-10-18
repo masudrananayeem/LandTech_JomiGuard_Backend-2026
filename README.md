@@ -45,3 +45,39 @@ See [`docs/COMPETITION_GUIDELINE_AUDIT.md`](docs/COMPETITION_GUIDELINE_AUDIT.md)
 - This starter does not provide production authentication/authorization for sensitive record access.
 - No government API or cadastral database is connected.
 - OCR and seal authentication are not implemented by the upload endpoint.
+
+## Transaction-level screening API (BhumiGuard-inspired)
+
+The API now includes a transaction-first, explainable screening workflow inspired by the uploaded BhumiGuard reference. It uses synthetic data only and does not connect to government registries.
+
+- `GET /api/transactions/scenarios` — list the controlled synthetic scenarios.
+- `GET /api/transactions/scenarios/:id` — fetch one scenario and its synthetic evidence.
+- `POST /api/transactions/screen` — screen a `scenarioId`, or submit an `evidence` object for custom testing.
+
+The engine evaluates eight rules: deed ID, seller registry, buyer registry, parcel registry, seller ownership, transfer area, same-portion sale history, and mutation-side owner consistency. The output includes PASS/WARNING/FAIL results, explanations, suggested next steps, score and risk band. A same-area record is not treated as proof of the same physical plot portion; the supplied `portionId` is important for meaningful double-sale screening.
+
+Example custom request:
+
+```json
+{
+  "evidence": {
+    "deedId": "SYN-DEED-2001",
+    "sellerId": "PERSON-001",
+    "buyerId": "PERSON-002",
+    "parcelId": "PARCEL-001",
+    "portionId": "PORTION-001",
+    "transferArea": 2,
+    "sellerRegistered": true,
+    "buyerRegistered": true,
+    "parcelRegistered": true,
+    "sellerOwnsParcel": true,
+    "sellerOwnedArea": 5,
+    "duplicateDeed": false,
+    "priorSamePortionSale": false,
+    "mutationAvailable": true,
+    "mutationOwnerId": "PERSON-001"
+  }
+}
+```
+
+Run tests with `npm test`. The synthetic scenario tests are sanity checks for deterministic rules, not evidence of real-world fraud detection performance.

@@ -5,6 +5,7 @@ workers_dev = true
 
 [vars]
 APP_ENV = "production"
+# Replace with the exact deployed Client and Admin origins before production.
 CORS_ORIGINS = "http://localhost:5173,http://localhost:5174"
 # Set production origins in Cloudflare dashboard or with wrangler vars.
 # Set CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY as vars.

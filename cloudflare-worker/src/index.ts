@@ -24,6 +24,42 @@ app.get('/', c=>c.json({service:'JomiGuard BD API',status:'ok',docs:'See README.
 app.get('/api/health', c=>c.json({status:'ok',service:'JomiGuard BD API',mode:'synthetic-demo',governmentApiConnected:false}));
 app.get('/api/cases', c=>c.json(demoCases));
 app.get('/api/cases/:id', c=>{const item=demoCases.find(x=>x.id===c.req.param('id')); return item?c.json(item):c.json({error:'Case not found'},404)});
+
+// Transaction screening scenarios and rule-based engine (all IDs are fictional).
+const transactionScenarios = [
+ {id:'clear-baseline',title:'Clear baseline',description:'All supplied synthetic references are consistent.',expectedRisk:'LOW',evidence:{deedId:'SYN-DEED-1001',sellerId:'PERSON-001',buyerId:'PERSON-002',parcelId:'PARCEL-001',portionId:'PORTION-001',transferArea:2,sellerRegistered:true,buyerRegistered:true,parcelRegistered:true,sellerOwnsParcel:true,sellerOwnedArea:5,duplicateDeed:false,priorSamePortionSale:false,mutationAvailable:true,mutationOwnerId:'PERSON-001'}},
+ {id:'seller-not-owner',title:'Seller is not current owner',description:'Supplied ledger does not identify the seller as an active owner.',expectedRisk:'HIGH',evidence:{deedId:'SYN-DEED-1002',sellerId:'PERSON-003',buyerId:'PERSON-002',parcelId:'PARCEL-001',portionId:'PORTION-001',transferArea:1,sellerRegistered:true,buyerRegistered:true,parcelRegistered:true,sellerOwnsParcel:false,sellerOwnedArea:0,duplicateDeed:false,priorSamePortionSale:false,mutationAvailable:true,mutationOwnerId:'PERSON-001'}},
+ {id:'over-transfer',title:'Transfer exceeds seller share',description:'Requested transfer exceeds the seller area in supplied evidence.',expectedRisk:'HIGH',evidence:{deedId:'SYN-DEED-1003',sellerId:'PERSON-001',buyerId:'PERSON-002',parcelId:'PARCEL-001',portionId:'PORTION-002',transferArea:8,sellerRegistered:true,buyerRegistered:true,parcelRegistered:true,sellerOwnsParcel:true,sellerOwnedArea:5,duplicateDeed:false,priorSamePortionSale:false,mutationAvailable:true,mutationOwnerId:'PERSON-001'}},
+ {id:'double-sale',title:'Possible double sale',description:'A prior transaction uses the same supplied land-portion identifier.',expectedRisk:'HIGH',evidence:{deedId:'SYN-DEED-1004',sellerId:'PERSON-001',buyerId:'PERSON-002',parcelId:'PARCEL-001',portionId:'PORTION-001',transferArea:1,sellerRegistered:true,buyerRegistered:true,parcelRegistered:true,sellerOwnsParcel:true,sellerOwnedArea:5,duplicateDeed:false,priorSamePortionSale:true,mutationAvailable:true,mutationOwnerId:'PERSON-001'}},
+ {id:'duplicate-deed',title:'Duplicate deed identifier',description:'Deed ID already appears in supplied synthetic history.',expectedRisk:'HIGH',evidence:{deedId:'SYN-DEED-1001',sellerId:'PERSON-001',buyerId:'PERSON-002',parcelId:'PARCEL-001',portionId:'PORTION-002',transferArea:1,sellerRegistered:true,buyerRegistered:true,parcelRegistered:true,sellerOwnsParcel:true,sellerOwnedArea:5,duplicateDeed:true,priorSamePortionSale:false,mutationAvailable:true,mutationOwnerId:'PERSON-001'}},
+ {id:'mutation-mismatch',title:'Mutation owner mismatch',description:'Supplied mutation owner differs from the proposed seller.',expectedRisk:'HIGH',evidence:{deedId:'SYN-DEED-1005',sellerId:'PERSON-001',buyerId:'PERSON-002',parcelId:'PARCEL-001',portionId:'PORTION-003',transferArea:1,sellerRegistered:true,buyerRegistered:true,parcelRegistered:true,sellerOwnsParcel:true,sellerOwnedArea:5,duplicateDeed:false,priorSamePortionSale:false,mutationAvailable:true,mutationOwnerId:'PERSON-003'}},
+ {id:'missing-evidence',title:'Incomplete evidence',description:'Some supplied registry or mutation evidence is missing.',expectedRisk:'MEDIUM',evidence:{deedId:'SYN-DEED-1006',sellerId:'PERSON-001',buyerId:'PERSON-002',parcelId:'PARCEL-001',portionId:'',transferArea:1,sellerRegistered:true,buyerRegistered:true,parcelRegistered:true,sellerOwnsParcel:true,sellerOwnedArea:5,duplicateDeed:false,priorSamePortionSale:false,mutationAvailable:false,mutationOwnerId:''}}
+];
+function screenTransaction(input:any) {
+ const checks:any[]=[]; const add=(code:string,title:string,status:'PASS'|'WARNING'|'FAIL',explanation:string,nextStep:string)=>checks.push({code,title,status,explanation,nextStep});
+ const val=(v:any)=>String(v??'').trim();
+ add('DEED_ID','Deed identifier',val(input.deedId)&&!input.duplicateDeed?'PASS':input.duplicateDeed?'FAIL':'WARNING',input.duplicateDeed?'The deed identifier is already present in supplied history.':val(input.deedId)?'A deed identifier was supplied; official authenticity is not verified.':'No deed identifier was supplied.','Compare the identifier with certified registration records.');
+ add('SELLER_REGISTRY','Seller registry reference',input.sellerRegistered?'PASS':'FAIL',input.sellerRegistered?'Seller reference exists in supplied synthetic data.':'Seller reference was not found in supplied synthetic data.','Confirm seller identity through authorized records.');
+ add('BUYER_REGISTRY','Buyer registry reference',input.buyerRegistered?'PASS':'FAIL',input.buyerRegistered?'Buyer reference exists in supplied synthetic data.':'Buyer reference was not found in supplied synthetic data.','Confirm buyer identity and ensure seller and buyer are different parties.');
+ add('PARCEL_REGISTRY','Parcel reference',input.parcelRegistered?'PASS':'FAIL',input.parcelRegistered?'Parcel reference exists in supplied synthetic data.':'Parcel reference was not found in supplied synthetic data.','Confirm mouza, survey type, khatian and dag against certified records.');
+ add('SELLER_OWNERSHIP','Seller ownership',input.sellerOwnsParcel?'PASS':'FAIL',input.sellerOwnsParcel?'Supplied ledger indicates seller ownership.':'Supplied ledger does not show seller as an active owner.','Review the complete ownership chain with an authorized professional.');
+ const transfer=Number(input.transferArea),owned=Number(input.sellerOwnedArea); const areaValid=Number.isFinite(transfer)&&transfer>0&&Number.isFinite(owned)&&owned>=0&&transfer<=owned;
+ add('TRANSFER_AREA','Transfer area',areaValid?'PASS':'FAIL',!Number.isFinite(transfer)||transfer<=0?'Transfer area must be positive.':transfer>owned?`Requested ${transfer} decimal exceeds supplied seller area ${owned} decimal.`:`Requested transfer (${transfer} decimal) does not exceed supplied seller area (${owned} decimal).`,'Verify units, fractional shares and area from original records.');
+ add('DOUBLE_SALE','Same-portion sale history',input.priorSamePortionSale?'FAIL':val(input.portionId)?'PASS':'WARNING',input.priorSamePortionSale?'A prior sale is recorded for the same supplied portion identifier.':val(input.portionId)?'No prior same-portion sale is flagged in supplied synthetic history.':'No reliable portion identifier was supplied.','Compare exact land portion and certified transaction history; area alone does not prove the same physical portion.');
+ add('MUTATION_MATCH','Mutation-side owner',!input.mutationAvailable?'WARNING':val(input.mutationOwnerId)===val(input.sellerId)?'PASS':'FAIL',!input.mutationAvailable?'Mutation-side evidence is unavailable.':val(input.mutationOwnerId)===val(input.sellerId)?'Supplied mutation owner matches the deed seller.':'Supplied mutation owner differs from the deed seller.','Verify mutation details through an authorized official channel; a mismatch is a review signal, not proof of fraud.');
+ const fails=checks.filter(x=>x.status==='FAIL').length,warnings=checks.filter(x=>x.status==='WARNING').length,passes=checks.filter(x=>x.status==='PASS').length;
+ return {screeningId:`JG-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${crypto.randomUUID().slice(0,6).toUpperCase()}`,risk:fails?'HIGH':warnings?'MEDIUM':'LOW',score:Math.min(100,fails*22+warnings*8),counts:{pass:passes,warning:warnings,fail:fails,total:checks.length},checks,evidence:{sellerId:val(input.sellerId),buyerId:val(input.buyerId),parcelId:val(input.parcelId),portionId:val(input.portionId)||null,sellerOwnedArea:owned,transferArea:transfer,mutationOwnerId:val(input.mutationOwnerId)||null},disclaimer:'Synthetic-data decision support only. This result does not establish legal title, document authenticity, fraud, or ownership. Confirm certified records with authorized officials and qualified legal professionals.'};
+}
+app.get('/api/transactions/scenarios', c=>c.json(transactionScenarios));
+app.post('/api/transactions/screen', async c=>{
+ const body:any=await c.req.json().catch(()=>null); if(!body||typeof body!=='object')return c.json({error:'A JSON request body is required.'},400);
+ const scenario=body.scenarioId?transactionScenarios.find(x=>x.id===String(body.scenarioId)):null;
+ if(body.scenarioId&&!scenario)return c.json({error:'Unknown synthetic scenario.'},404);
+ const evidence=scenario?scenario.evidence:body.evidence;
+ if(!evidence||typeof evidence!=='object')return c.json({error:'Provide a valid scenarioId or evidence object.'},400);
+ if(String(evidence.sellerId||'') && String(evidence.sellerId)===String(evidence.buyerId||''))return c.json({error:'Seller and buyer must be different synthetic identities.'},400);
+ return c.json(screenTransaction(evidence));
+});
 app.post('/api/analyze', async c=>{
   const body:any=await c.req.json().catch(()=>({}));
   const item=body.caseId?demoCases.find(x=>x.id===body.caseId):body.records;
@@ -43,7 +79,7 @@ async function verifyFirebaseToken(token:string, apiKey:string):Promise<any|null
   if(!token||!apiKey)return null;
   try { const r=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(apiKey)}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({idToken:token})}); if(!r.ok)return null; const d:any=await r.json(); return d.users?.[0]||null; } catch { return null; }
 }
-async function hmacSha1Hex(secret:string, message:string){const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-1'},false,['sign']);const sig=await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(message));return [...new Uint8Array(sig)].map(b=>b.toString(16).padStart(2,'0')).join('');}
+async function cloudinarySha1Hex(secret:string, message:string){const bytes=await crypto.subtle.digest('SHA-1',new TextEncoder().encode(message+secret));return [...new Uint8Array(bytes)].map(b=>b.toString(16).padStart(2,'0')).join('');}
 app.post('/api/cloudinary/signature',async c=>{
   const auth=c.req.header('Authorization')||''; const token=auth.startsWith('Bearer ')?auth.slice(7):'';
   const firebaseUser=await verifyFirebaseToken(token,c.env.FIREBASE_WEB_API_KEY);
@@ -55,7 +91,7 @@ app.post('/api/cloudinary/signature',async c=>{
   if(!allowedFolder)return c.json({error:'Unsupported upload folder.'},400);
   const timestamp=Math.floor(Date.now()/1000);
   const params=`folder=${allowedFolder}&timestamp=${timestamp}`;
-  const signature=await hmacSha1Hex(c.env.CLOUDINARY_API_SECRET,params);
+  const signature=await cloudinarySha1Hex(c.env.CLOUDINARY_API_SECRET,params);
   return c.json({cloudName:c.env.CLOUDINARY_CLOUD_NAME,apiKey:c.env.CLOUDINARY_API_KEY,timestamp,folder:allowedFolder,signature});
 });
 app.notFound(c=>c.json({error:'Not found'},404));

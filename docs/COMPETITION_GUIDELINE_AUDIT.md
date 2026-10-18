@@ -1,46 +1,33 @@
-# LandTech 2026 guideline audit — JomiGuard BD
+# LandTech 2026 Rulebook v1.2 — compliance audit
 
-## Scope decision
-**Primary problem:** cross-check supplied deed/khatian/mutation/plot/inheritance fields and explain possible inconsistencies before a citizen proceeds with a land transaction.
+**Chosen statement:** P3 — Catch Fraud & Double-Selling (official rulebook Section 5). The implementation must remain focused on this single problem statement for the submission.
 
-This audit is based on the guidelines pasted by the team. The official rulebook containing the six selectable problem statements was not included in the supplied files, so exact compliance with one of those six cannot be certified until the team identifies the chosen statement.
-
-## Current implementation status
-
-| Requirement | Status | Evidence / remaining work |
+| Official rulebook item | Current position | Required action before submission |
 |---|---|---|
-| One genuine Bangladesh land problem | Partial | Risk engine focuses on record inconsistency; map/GIS uses supplied coordinates only, no authoritative cadastral data. |
-| 4–5 core features | Partial | Rule-based cross-checking, findings, synthetic cases, OCR upload-validation endpoint, evaluation metrics endpoint. Keep UI extras secondary. |
-| Handwritten Bangla OCR | Not implemented | `/api/ocr/preview` only validates upload in memory and explicitly returns `ocr_provider_not_configured`. Connect an OCR model/provider before claiming OCR. |
-| Dates, deed IDs, names, dag/khatian, mouza | Partial | Rules added for owner, deed number missing, date validity, dag, khatian and mouza mismatch. Need field-extraction/OCR model and reviewed ground truth. |
-| Seal verification | Partial/manual | A supplied seal review flag can trigger a caution. No seal detection/authentication model exists; a visible seal cannot prove validity. |
-| Duplicate sale / ownership history | Partial | Rules can flag a repeated deed number or overlapping supplied prior-sale records. It is not a registry search and can produce false positives/negatives. |
-| Inheritance / family share | Partial | Checks missing shares and totals other than 100%; does not calculate legal shares, which depend on facts and applicable law. |
-| Plot boundary / coordinate mapping | Partial | Coordinates can be compared by distance; no trusted cadastral boundary dataset or authoritative geospatial verification is integrated. |
-| Synthetic/hard cases | Partial | Three synthetic cases exist; expanded unit tests cover invalid dates, conflicting names, duplicate deed, inheritance shares, mouza and boundary flags. More labelled hard cases required. |
-| OCR/model metric >=90% | Not met / not measured | Do not claim 90%. `scripts/evaluate_ocr.py` calculates CER/WER from manually reviewed JSONL predictions. No OCR predictions/ground truth benchmark is bundled. |
-| Field extraction precision/recall/F1 | Not measured | Build a manually labelled field-level benchmark before reporting. |
-| GitHub + README | Partial | Repo-specific README and dataset plan exist; fill in actual run/build results, chosen official statement, model details and sources before submission. |
-| 3-minute demo video | Not recorded | `docs/DEMO_SCRIPT.md` provides a suggested outline; record a real working demo and show only measured results. |
+| Original project (Section 10) | Team-specific implementation | Credit reused code/assets and keep authentic Git history. |
+| Dummy data only; no real names/NIDs/phones/land records (Section 10 + FAQ) | Bundled records use fictional identifiers | Inspect screenshots/demo exports to ensure no real personal data appears. |
+| No scraping/bulk-download of government sites (Section 10) | No government API/scraper implemented | Keep it that way unless organizers give explicit approval. |
+| Security tests only on own system (Section 10) | Local app and team-controlled deployment | Do not probe government or third-party systems. |
+| Explainable code and AI-tool disclosure (Section 10 + FAQ) | AI tools may have assisted development | Team must list actual tools used and explain the code. |
+| Concept note up to 4 pages (Section 8) | Outline included | Fill in actual team/mentor details, export PDF, check page count. |
+| Code link + README (Section 8) | README and deploy docs included | Push both repos, verify access for judges, run build/test and record truthful status. |
+| Demo video <= 3 minutes (Section 8) | Script included | Record the actual working app and time it. |
+| Live link optional but recommended (Section 8) | Cloudflare config included | Deploy and test before listing a URL; do not represent placeholders as live. |
 
-## Data-source handling
+## What is and is not implemented
 
-- Mendeley dataset URL supplied by team: `https://data.mendeley.com/datasets/yk3c3xy9vm/1`. Confirm current record metadata, licence, attribution and any conditions when downloading. Do not state that the project trained on it until the images and labels have actually been downloaded and evaluated.
-- LandRegistrationBD deed sample pages are document-format references, not automatically a reusable labelled dataset. Confirm rights before redistributing downloaded examples.
-- DLRS forms page: use as a reference source; record retrieval date, document name and licence/terms.
-- NLM Dataset Catalog query: relevance to Bangladeshi land deeds is not confirmed from the supplied query URL; exclude unless its metadata proves relevance and permission.
+Implemented in the Worker: synthetic case catalogue, `/api/transactions/scenarios`, `/api/transactions/screen`, eight rule-based checks, health endpoint, and a Firebase-token-protected Cloudinary profile upload signature route.
 
-## Important architecture note
-The current project has a participant-controlled Express backend and Firebase configuration. If the actual official LandTech rulebook requires frontend-only or forbids participant-controlled backend/database/storage, this architecture would violate that rule. Check the exact LandTech rulebook before submitting; do not assume the pasted guideline summary overrides the official rulebook.
+Not implemented/claimed: OCR, seal verification, government registry access, authoritative cadastral data, ML fraud classification, or measured real-world accuracy. No performance metrics should be claimed until measured with an appropriate dataset and evaluation protocol.
 
-## Acceptance criteria before claiming complete
-1. Select and quote the exact official problem statement.
-2. Run `npm run typecheck`, `npm test`, and `npm run build` successfully in backend and frontend repositories; record actual output.
-3. Add a manually reviewed, licence-compliant benchmark split by source document, not page/crop.
-4. Report OCR CER/WER and per-field extraction exact-match/precision/recall/F1 with sample counts; no invented numbers.
-5. Demonstrate five or fewer reliable core features using synthetic/anonymized records.
-6. Make all findings explainable and label them as screening alerts, not legal conclusions.
+## Acceptance checklist
 
-## Transaction-level implementation update
-
-Added a separate transaction screening engine and API routes for six synthetic scenarios plus custom evidence. The rule set covers deed ID reuse, seller/buyer/parcel registry references, seller ownership, transfer-area sufficiency, same-portion prior sale and mutation owner mismatch. Results explain each PASS/WARNING/FAIL and propose a next step. Automated tests check expected bands for the six synthetic scenarios. These tests are not a model benchmark and do not establish legal validity.
+- [ ] `npm install` succeeds for frontend and Worker.
+- [ ] Frontend `npm run typecheck` and `npm run build` succeed.
+- [ ] Worker `npm run typecheck` succeeds.
+- [ ] Test all seven scenarios and export JSON.
+- [ ] Verify client/admin sign-in and admin role behavior with a real test Firebase project.
+- [ ] Verify profile upload only with a test account and a configured Cloudinary project.
+- [ ] Confirm all records are fictional and no secrets are committed.
+- [ ] Fill team/mentor details, AI tools, third-party credits and source links in concept note/README.
+- [ ] Record <=3-minute demo; submit the <=4-page concept note and accessible code link.

@@ -2,7 +2,9 @@
 
 A screening API for comparing user-supplied land-document fields. It is a prototype using **synthetic records only**; it is not connected to Bangladesh government systems and does not establish legal ownership or document validity.
 
-## Setup
+## Setup (legacy Express target)
+
+This root `.env.example` applies to the legacy Express server (`http://localhost:4000`). The Cloudflare deployment target is `cloudflare-worker/`; for local Worker secrets, use `cloudflare-worker/.dev.vars.example` and copy it to `.dev.vars` as described in `cloudflare-worker/README.md`. These are separate runtime targets; do not expect root `.env` values to populate Wrangler Worker bindings automatically.
 
 ```bash
 npm install
@@ -10,7 +12,7 @@ cp .env.example .env
 npm run dev
 ```
 
-Default API: `http://localhost:4000`.
+Default Express API: `http://localhost:4000`.
 
 ## Commands
 

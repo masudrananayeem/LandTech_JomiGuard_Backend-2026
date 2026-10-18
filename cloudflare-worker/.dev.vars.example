@@ -1,0 +1,7 @@
+# Copy this file to .dev.vars for LOCAL Wrangler development only.
+# Replace every placeholder with values from your own accounts.
+# Never commit .dev.vars. It is excluded by .gitignore.
+CLOUDINARY_CLOUD_NAME=YOUR_CLOUDINARY_CLOUD_NAME
+CLOUDINARY_API_KEY=YOUR_CLOUDINARY_API_KEY
+CLOUDINARY_API_SECRET=YOUR_CLOUDINARY_API_SECRET
+FIREBASE_WEB_API_KEY=YOUR_FIREBASE_WEB_API_KEY

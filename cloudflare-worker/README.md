@@ -4,10 +4,16 @@ This is the Worker deployment target. It provides `/api/health`, synthetic case 
 
 ## Local
 
+Install dependencies, create the local-only secret file, then start Wrangler:
+
 ```bash
 npm install
+cp .dev.vars.example .dev.vars
+# Edit .dev.vars and replace every YOUR_* placeholder with values from your accounts
 npm run dev
 ```
+
+`.dev.vars` is intentionally not included with real values because credentials are account-specific. It is ignored by Git. Never paste API secrets into frontend `VITE_*` variables or commit `.dev.vars`. For local CORS, the checked-in `wrangler.toml` allows the default localhost origins.
 
 Wrangler usually serves local Worker at `http://localhost:8787`. Verify `GET /api/health`, `GET /api/transactions/scenarios`, and `POST /api/transactions/screen`.
 

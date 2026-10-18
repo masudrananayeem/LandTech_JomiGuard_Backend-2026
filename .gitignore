@@ -5,3 +5,8 @@ coverage/
 .env.*
 !.env.example
 .DS_Store
+
+# Cloudflare local secrets
+cloudflare-worker/.dev.vars
+cloudflare-worker/.env
+cloudflare-worker/.wrangler/

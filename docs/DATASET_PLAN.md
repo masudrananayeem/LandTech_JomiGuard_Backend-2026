@@ -16,3 +16,16 @@
 - Field extraction: report exact match, precision, recall and F1 for each field; show per-field sample counts and confidence intervals where feasible.
 - Risk engine: test known injected discrepancies separately; report confusion matrix, precision/recall/F1 per risk class. Synthetic cases do not demonstrate real-world model performance.
 - Never label an OCR read as legally valid. Low OCR confidence or conflicts should trigger human review.
+
+## Dataset links supplied by the team
+
+- Mendeley: https://data.mendeley.com/datasets/yk3c3xy9vm/1 — likely most directly relevant source; verify the current licence, metadata and transcription/annotation availability before use.
+- Land deed sample category: https://landregistrationbd.com/category/দলিলের-নমুনা-sample-deed/
+- Saf-Kabla sample: https://landregistrationbd.com/সাফ-কবলা-দলিলের-নমুনা/
+- Baynapatra sample: https://landregistrationbd.com/বায়নাপত্র-দলিলের-নমুনা-sample/
+- Partition deed sample: https://landregistrationbd.com/বন্টননামা-দলিলের-নমুনা/
+- DLRS forms: https://dlrs.gov.bd/views/all-forms/6922d9f0933eb65569e0132a
+- Deed format reference: https://landregistrationbd.com/দলিলের-ফরমেট-ফর্ম-dolil-formet/
+- NLM catalogue query: https://datasetcatalog.nlm.nih.gov/dataset?q=0002937739 — relevance to Bangladeshi land documents has not been established; treat as unverified, not as a project dataset.
+
+The deed sample webpages are format references, not assumed open datasets. Check terms and permissions before copying their files into the repository. The application currently ships only synthetic records; it does not claim to train on any linked dataset.
